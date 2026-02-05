@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tango Logic Puzzle - 專業版</title>
+    <title>Tango Pro - 邏輯益智大師</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
-            --bg: #1a1a2e;
-            --card-bg: #16213e;
-            --cell-bg: #0f3460;
-            --cell-fixed: #1a1a2e;
-            --primary: #e94560;
-            --yellow: #f1c40f;
-            --blue: #3498db;
-            --text: #e2e2e2;
-            --error: #ff4757;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --cell-bg: #334155;
+            --cell-fixed: #0f172a;
+            --primary: #38bdf8;
+            --secondary: #818cf8;
+            --yellow: #fbbf24;
+            --blue: #3b82f6;
+            --text: #f8fafc;
+            --error: #ef4444;
+            --success: #22c55e;
         }
 
         body {
@@ -27,71 +29,81 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
         }
 
-        h1 { margin: 10px 0; letter-spacing: 5px; color: var(--primary); }
+        .header { text-align: center; margin-bottom: 15px; }
+        h1 { margin: 5px 0; letter-spacing: 8px; color: var(--primary); font-size: 2.5rem; }
 
-        .level-select { margin-bottom: 20px; }
-        button {
-            padding: 8px 16px;
-            margin: 0 5px;
+        /* 控制列 */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 18px;
             cursor: pointer;
             border: none;
-            border-radius: 5px;
-            background: var(--cell-bg);
-            color: white;
-            transition: 0.3s;
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-weight: 600;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        button:hover { background: var(--primary); }
-        button.active { background: var(--primary); font-weight: bold; }
 
-        /* 遊戲主面板 - 11x11 網格系統 (6格 + 5個符號間隙) */
+        .btn:hover { background: var(--cell-bg); transform: translateY(-2px); }
+        .btn.active { background: var(--primary); color: var(--bg); }
+        .btn-action { background: var(--secondary); }
+        .btn-hint { background: var(--success); }
+
+        /* 遊戲面板 */
+        .board-container {
+            position: relative;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
         .board {
             display: grid;
-            grid-template-columns: repeat(6, 60px 20px); /* 60px 格子, 20px 符號間隙 */
             grid-template-columns: 60px 25px 60px 25px 60px 25px 60px 25px 60px 25px 60px;
             grid-template-rows: 60px 25px 60px 25px 60px 25px 60px 25px 60px 25px 60px;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             user-select: none;
         }
 
-        /* 格子樣式 */
         .cell {
-            width: 60px;
-            height: 60px;
+            width: 60px; height: 60px;
             background: var(--cell-bg);
-            border-radius: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2rem;
+            border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2.2rem;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: 0.15s;
             border: 2px solid transparent;
         }
-        .cell.fixed { background: var(--cell-fixed); cursor: default; }
-        .cell:hover:not(.fixed) { transform: scale(1.05); filter: brightness(1.2); }
+        .cell.fixed { background: var(--cell-fixed); cursor: default; filter: contrast(0.8); }
+        .cell:hover:not(.fixed) { border-color: var(--primary); }
 
-        /* 錯誤偵測樣式 */
-        .error-line { border-color: var(--error) !important; background: rgba(255, 71, 87, 0.1); }
-        .cell.conflict { animation: shake 0.4s; border: 2px solid var(--error); }
+        /* 錯誤顯示 */
+        .cell.conflict { animation: shake 0.4s; border-color: var(--error); background: rgba(239, 68, 68, 0.2); }
+        .error-line { background: rgba(239, 68, 68, 0.1) !important; }
 
-        /* 約束符號樣式 (等於、叉叉) */
-        .symbol {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-            color: var(--text);
-            opacity: 0.6;
+        /* 提示動畫 */
+        .hint-flash { animation: flash 1s ease-out; }
+
+        @keyframes flash {
+            0% { background: var(--success); transform: scale(1.1); }
+            100% { background: var(--cell-bg); transform: scale(1); }
         }
-
-        .status-msg { height: 30px; margin-top: 15px; font-weight: bold; }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -99,106 +111,142 @@
             75% { transform: translateX(4px); }
         }
 
-        .victory-modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: var(--primary); padding: 30px 50px; border-radius: 20px;
-            text-align: center; display: none; z-index: 100; box-shadow: 0 0 50px rgba(233, 69, 96, 0.5);
+        .symbol {
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem; font-weight: bold; color: var(--primary); opacity: 0.8;
+        }
+
+        .footer { margin-top: 20px; font-size: 0.9rem; opacity: 0.6; }
+
+        /* 響應式微調 */
+        @media (max-width: 500px) {
+            .board { transform: scale(0.8); }
+            h1 { font-size: 1.8rem; }
         }
     </style>
 </head>
 <body>
 
-    <h1>TANGO</h1>
-
-    <div class="level-select" id="levelButtons">
-        <button onclick="loadLevel(0)" class="active">基礎練習</button>
-        <button onclick="loadLevel(1)">邏輯進階</button>
-        <button onclick="loadLevel(2)">專家挑戰</button>
+    <div class="header">
+        <h1>TANGO</h1>
+        <p>填充 🟡 與 🔷，遵循邏輯約束</p>
     </div>
 
-    <div class="board" id="board"></div>
-
-    <div class="status-msg" id="statusMsg">點擊格子填入 🟡 或 🔷</div>
-
-    <div class="victory-modal" id="winMessage">
-        <h2>太棒了！</h2>
-        <p>你完美解決了這道謎題</p>
-        <button onclick="closeWin()" style="background: white; color: var(--primary);">繼續下一關</button>
+    <div class="controls">
+        <button class="btn" id="diff-0" onclick="setDifficulty(0)">初級</button>
+        <button class="btn" id="diff-1" onclick="setDifficulty(1)">中級</button>
+        <button class="btn" id="diff-2" onclick="setDifficulty(2)">高級</button>
     </div>
+
+    <div class="board-container">
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="controls" style="margin-top: 25px;">
+        <button class="btn btn-action" onclick="newGame()">🔄 新題目</button>
+        <button class="btn btn-hint" onclick="getHint()">💡 提示</button>
+        <button class="btn" onclick="shareGame()">📤 分享</button>
+    </div>
+
+    <div id="statusMsg" style="margin-top: 10px; font-weight: bold; color: var(--primary);"></div>
+
+    <div class="footer">由邏輯驅動的 Tango 益智遊戲</div>
 
 <script>
-    const GRID_SIZE = 6;
-    // 題庫資料
-    const levels = [
-        {
-            name: "基礎練習",
-            fixed: [[0,0,1], [0,5,2], [2,2,1], [5,5,1]], // [r, c, type] 1:🟡, 2:🔷
-            hSigns: [{r:0, c:2, type:'='}, {r:4, c:0, type:'x'}],
-            vSigns: [{r:1, c:4, type:'='}, {r:3, c:1, type:'x'}]
-        },
-        {
-            name: "邏輯進階",
-            fixed: [[1,1,2], [1,4,1], [4,1,1], [4,4,2]],
-            hSigns: [{r:0, c:0, type:'='}, {r:2, c:4, type:'='}, {r:5, c:2, type:'x'}],
-            vSigns: [{r:0, c:3, type:'x'}, {r:4, c:0, type:'='}]
-        },
-        {
-            name: "專家挑戰",
-            fixed: [[0,3,1], [5,2,2]],
-            hSigns: [{r:0, c:0, type:'x'}, {r:1, c:2, type:'='}, {r:3, c:4, type:'x'}, {r:5, c:0, type:'='}],
-            vSigns: [{r:0, c:5, type:'x'}, {r:2, c:0, type:'='}, {r:4, c:3, type:'x'}]
-        }
+    // 題庫大數據 (0:空, 1:🟡, 2:🔷)
+    const PUZZLE_BANK = [
+        // 難度 0: 初級
+        [
+            {
+                fixed: [[0,0,1], [0,5,2], [2,2,1], [5,5,1]],
+                hSigns: [{r:0, c:2, type:'='}, {r:4, c:0, type:'x'}],
+                vSigns: [{r:1, c:4, type:'='}, {r:3, c:1, type:'x'}],
+                solution: [
+                    [1,1,2,2,1,2], [2,2,1,1,2,1], [1,1,2,2,1,2], [2,2,1,1,2,1], [1,2,2,1,1,2], [2,1,1,2,2,1]
+                ]
+            },
+            {
+                fixed: [[1,1,1], [1,2,1], [4,4,2], [4,3,2]],
+                hSigns: [{r:2, c:2, type:'x'}],
+                vSigns: [{r:0, c:0, type:'='}],
+                solution: [
+                    [1,2,1,2,2,1], [2,1,1,2,1,2], [1,2,2,1,2,1], [2,1,2,1,1,2], [1,2,1,2,2,1], [2,1,2,1,1,2]
+                ]
+            }
+        ],
+        // 難度 1: 中級
+        [
+            {
+                fixed: [[0,1,2], [5,4,1]],
+                hSigns: [{r:0, c:0, type:'='}, {r:2, c:4, type:'='}, {r:5, c:2, type:'x'}],
+                vSigns: [{r:0, c:3, type:'x'}, {r:4, c:0, type:'='}],
+                solution: [
+                    [2,2,1,1,2,1], [1,1,2,2,1,2], [2,2,1,1,2,1], [1,2,2,1,1,2], [2,1,1,2,2,1], [1,1,2,2,1,2]
+                ]
+            }
+        ],
+        // 難度 2: 高級
+        [
+            {
+                fixed: [[0,0,1]],
+                hSigns: [{r:0, c:0, type:'x'}, {r:1, c:2, type:'='}, {r:3, c:4, type:'x'}, {r:5, c:0, type:'='}],
+                vSigns: [{r:0, c:5, type:'x'}, {r:2, c:0, type:'='}, {r:4, c:3, type:'x'}],
+                solution: [
+                    [1,2,1,2,1,2], [1,2,2,1,1,2], [2,1,1,2,2,1], [2,1,2,1,2,1], [1,2,1,2,1,2], [2,1,2,1,2,1]
+                ]
+            }
+        ]
     ];
 
-    let currentLevelIdx = 0;
-    let boardState = Array(6).fill().map(() => Array(6).fill(0));
-    let fixedMask = Array(6).fill().map(() => Array(6).fill(false));
+    let currentDifficulty = 0;
+    let currentPuzzle = null;
+    let boardState = [];
+    let fixedMask = [];
 
     function initBoardUI() {
         const boardEl = document.getElementById('board');
         boardEl.innerHTML = '';
-        
-        // 生成 11x11 的格子與間隙
         for (let r = 0; r < 11; r++) {
             for (let c = 0; c < 11; c++) {
                 const isCell = r % 2 === 0 && c % 2 === 0;
                 const div = document.createElement('div');
-                
                 if (isCell) {
-                    const row = r / 2;
-                    const col = c / 2;
-                    div.className = 'cell';
-                    div.id = `cell-${row}-${col}`;
+                    const row = r / 2; const col = c / 2;
+                    div.className = 'cell'; div.id = `cell-${row}-${col}`;
                     div.onclick = () => handleCellClick(row, col);
                 } else {
-                    div.className = 'symbol';
-                    div.id = `sym-${r}-${c}`;
+                    div.className = 'symbol'; div.id = `sym-${r}-${c}`;
                 }
                 boardEl.appendChild(div);
             }
         }
     }
 
-    function loadLevel(idx) {
-        currentLevelIdx = idx;
-        const level = levels[idx];
+    function setDifficulty(d) {
+        currentDifficulty = d;
+        document.querySelectorAll('.btn[id^="diff-"]').forEach((btn, i) => {
+            btn.classList.toggle('active', i === d);
+        });
+        newGame();
+    }
+
+    function newGame() {
+        const bank = PUZZLE_BANK[currentDifficulty];
+        currentPuzzle = bank[Math.floor(Math.random() * bank.length)];
         
-        // 重置狀態
         boardState = Array(6).fill().map(() => Array(6).fill(0));
         fixedMask = Array(6).fill().map(() => Array(6).fill(false));
-        
-        // 更新按鈕樣式
-        document.querySelectorAll('.level-select button').forEach((btn, i) => {
-            btn.className = i === idx ? 'active' : '';
-        });
 
-        // 填入固定格
-        level.fixed.forEach(([r, c, type]) => {
+        currentPuzzle.fixed.forEach(([r, c, type]) => {
             boardState[r][c] = type;
             fixedMask[r][c] = true;
         });
 
+        // 清除舊符號
+        document.querySelectorAll('.symbol').forEach(s => s.innerText = '');
+        
         render();
+        document.getElementById('statusMsg').innerText = "新題目已載入";
     }
 
     function handleCellClick(r, c) {
@@ -209,10 +257,8 @@
     }
 
     function render() {
-        // 清除所有錯誤樣式
-        document.querySelectorAll('.cell').forEach(el => el.classList.remove('conflict', 'error-line'));
+        document.querySelectorAll('.cell').forEach(el => el.classList.remove('conflict', 'error-line', 'hint-flash'));
         
-        // 渲染格子
         for (let r = 0; r < 6; r++) {
             for (let c = 0; c < 6; c++) {
                 const el = document.getElementById(`cell-${r}-${c}`);
@@ -222,15 +268,11 @@
             }
         }
 
-        // 渲染符號
-        const level = levels[currentLevelIdx];
-        level.hSigns.forEach(s => {
-            const el = document.getElementById(`sym-${s.r*2}-${s.c*2+1}`);
-            el.innerText = s.type === '=' ? '=' : '×';
+        currentPuzzle.hSigns.forEach(s => {
+            document.getElementById(`sym-${s.r*2}-${s.c*2+1}`).innerText = s.type === '=' ? '=' : '×';
         });
-        level.vSigns.forEach(s => {
-            const el = document.getElementById(`sym-${s.r*2+1}-${s.c*2}`);
-            el.innerText = s.type === '=' ? '‖' : '×'; // 垂直向用雙線表示等於
+        currentPuzzle.vSigns.forEach(s => {
+            document.getElementById(`sym-${s.r*2+1}-${s.c*2}`).innerText = s.type === '=' ? '‖' : '×';
         });
 
         validate();
@@ -238,54 +280,37 @@
 
     function validate() {
         let errors = new Set();
-
-        // 1. 檢查三連 (列與行)
+        // 檢查三連
         for (let i = 0; i < 6; i++) {
             for (let j = 0; j < 4; j++) {
-                // 橫向
-                if (boardState[i][j] !== 0 && boardState[i][j] === boardState[i][j+1] && boardState[i][j] === boardState[i][j+2]) {
+                if (boardState[i][j] !== 0 && boardState[i][j] === boardState[i][j+1] && boardState[i][j] === boardState[i][j+2]) 
                     [0,1,2].forEach(k => errors.add(`${i}-${j+k}`));
-                }
-                // 縱向
-                if (boardState[j][i] !== 0 && boardState[j][i] === boardState[j+1][i] && boardState[j][i] === boardState[j+2][i]) {
+                if (boardState[j][i] !== 0 && boardState[j][i] === boardState[j+1][i] && boardState[j][i] === boardState[j+2][i]) 
                     [0,1,2].forEach(k => errors.add(`${j+k}-${i}`));
-                }
             }
         }
-
-        // 2. 檢查數量平衡 (如果超過 3 個就報錯)
+        // 檢查數量
         for (let i = 0; i < 6; i++) {
-            let rCount = [0, 0, 0], cCount = [0, 0, 0];
-            for (let j = 0; j < 6; j++) {
-                rCount[boardState[i][j]]++;
-                cCount[boardState[j][i]]++;
-            }
-            if (rCount[1] > 3 || rCount[2] > 3) highlightLine(i, 'row');
-            if (cCount[1] > 3 || cCount[2] > 3) highlightLine(i, 'col');
+            let rC = [0,0,0], cC = [0,0,0];
+            for (let j = 0; j < 6; j++) { rC[boardState[i][j]]++; cC[boardState[j][i]]++; }
+            if (rC[1] > 3 || rC[2] > 3) highlightLine(i, 'row');
+            if (cC[1] > 3 || cC[2] > 3) highlightLine(i, 'col');
         }
-
-        // 3. 檢查約束符號
-        const level = levels[currentLevelIdx];
-        level.hSigns.forEach(s => {
+        // 約束檢查
+        currentPuzzle.hSigns.forEach(s => {
             const v1 = boardState[s.r][s.c], v2 = boardState[s.r][s.c+1];
-            if (v1 !== 0 && v2 !== 0) {
-                if ((s.type === '=' && v1 !== v2) || (s.type === 'x' && v1 === v2)) {
-                    errors.add(`${s.r}-${s.c}`); errors.add(`${s.r}-${s.c+1}`);
-                }
+            if (v1 && v2 && ((s.type === '=' && v1 !== v2) || (s.type === 'x' && v1 === v2))) {
+                errors.add(`${s.r}-${s.c}`); errors.add(`${s.r}-${s.c+1}`);
             }
         });
-        level.vSigns.forEach(s => {
+        currentPuzzle.vSigns.forEach(s => {
             const v1 = boardState[s.r][s.c], v2 = boardState[s.r+1][s.c];
-            if (v1 !== 0 && v2 !== 0) {
-                if ((s.type === '=' && v1 !== v2) || (s.type === 'x' && v1 === v2)) {
-                    errors.add(`${s.r}-${s.c}`); errors.add(`${s.r+1}-${s.c}`);
-                }
+            if (v1 && v2 && ((s.type === '=' && v1 !== v2) || (s.type === 'x' && v1 === v2))) {
+                errors.add(`${s.r}-${s.c}`); errors.add(`${s.r+1}-${s.c}`);
             }
         });
 
-        errors.forEach(key => {
-            document.getElementById(`cell-${key}`).classList.add('conflict');
-        });
+        errors.forEach(key => document.getElementById(`cell-${key}`).classList.add('conflict'));
     }
 
     function highlightLine(idx, type) {
@@ -295,39 +320,46 @@
         }
     }
 
+    // 提示功能：找出第一個空白或錯誤的格
+    function getHint() {
+        for (let r = 0; r < 6; r++) {
+            for (let c = 0; c < 6; c++) {
+                const correctVal = currentPuzzle.solution[r][c];
+                if (boardState[r][c] !== correctVal) {
+                    boardState[r][r] = 0; // 先清掉觸發渲染
+                    boardState[r][c] = correctVal;
+                    render();
+                    const el = document.getElementById(`cell-${r}-${c}`);
+                    el.classList.add('hint-flash');
+                    document.getElementById('statusMsg').innerText = "提示：已為您填入正確方塊";
+                    checkWin();
+                    return;
+                }
+            }
+        }
+    }
+
     function checkWin() {
-        // 檢查是否填滿且無錯誤
-        let filled = true;
-        for(let r=0; r<6; r++) {
-            for(let c=0; c<6; c++) { if(boardState[r][c] === 0) filled = false; }
-        }
-        if(!filled) return;
-
-        // 再次跑一次完整驗證確保沒 conflict
-        const hasConflict = document.querySelector('.conflict') || document.querySelector('.error-line');
-        if (filled && !hasConflict) {
-            triggerWin();
+        const isFilled = boardState.every(row => row.every(cell => cell !== 0));
+        const hasError = document.querySelector('.conflict') || document.querySelector('.error-line');
+        if (isFilled && !hasError) {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            document.getElementById('statusMsg').innerText = "🎉 完美達成！";
         }
     }
 
-    function triggerWin() {
-        confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#f1c40f', '#3498db', '#e94560']
-        });
-        document.getElementById('winMessage').style.display = 'block';
+    function shareGame() {
+        const text = `我在 Tango 益智遊戲挑戰了「${['初級','中級','高級'][currentDifficulty]}」難度，快來一起玩！`;
+        if (navigator.share) {
+            navigator.share({ title: 'Tango Logic', text: text, url: window.location.href });
+        } else {
+            navigator.clipboard.writeText(text + " " + window.location.href);
+            alert("已複製分享訊息到剪貼簿！");
+        }
     }
 
-    function closeWin() {
-        document.getElementById('winMessage').style.display = 'none';
-        if (currentLevelIdx < levels.length - 1) loadLevel(currentLevelIdx + 1);
-    }
-
-    // 初始化
     initBoardUI();
-    loadLevel(0);
+    setDifficulty(0);
 </script>
 </body>
 </html>
